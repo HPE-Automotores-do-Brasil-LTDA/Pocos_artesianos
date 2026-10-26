@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>PA-02</title>
+<style>
+body{margin:0;background:#2b2b2b;font-family:Arial,sans-serif;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.barra{position:sticky;top:0;z-index:5;background:#00703c;color:#fff;
+  display:flex;align-items:center;gap:12px;padding:10px 12px;font-weight:bold}
+.barra a{color:#fff;text-decoration:none;font-size:22px;line-height:1}
+#paginas{padding:10px 0}
+.pag{position:relative;margin:0 auto 10px;max-width:900px}
+.pag canvas{display:block;width:100%;height:auto;background:#fff;pointer-events:none}
+.marca{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;overflow:hidden}
+.marca span{transform:rotate(-35deg);font-size:7vw;font-weight:bold;
+  color:rgba(0,112,60,.13);white-space:nowrap}
+#msg{color:#ccc;text-align:center;padding:30px}
+@media print{body{display:none}}
+</style>
+</head>
+<body oncontextmenu="return false">
+<div class="barra"><a href="./">&#8592;</a><span id="titulo">PA-02</span></div>
+<div id="msg">Carregando...</div>
+<div id="paginas"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+var POCO = "PA-02";
+var DOCS = {
+  "ART": "ART",
+  "CRQ": "CRQ",
+  "FDS": "FDS",
+  "Laudo_Potabilidade": "Laudo de potabilidade",
+  "Licenca_Ambiental": "Licença ambiental",
+  "Outorga": "Outorga"
+};
+
+var doc = new URLSearchParams(location.search).get("doc");
+var msg = document.getElementById("msg");
+
+if (!DOCS[doc]) {
+  msg.textContent = "Documento não encontrado.";
+} else {
+  document.getElementById("titulo").textContent = POCO + " - " + DOCS[doc];
+  document.title = POCO + " - " + DOCS[doc];
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+  pdfjsLib.getDocument(doc + ".pdf").promise.then(async function (pdf) {
+    msg.remove();
+    var area = document.getElementById("paginas");
+    var escala = Math.min(window.devicePixelRatio || 1, 2) * 1.5;
+    for (var i = 1; i <= pdf.numPages; i++) {
+      var pagina = await pdf.getPage(i);
+      var vp = pagina.getViewport({ scale: escala });
+      var div = document.createElement("div");
+      div.className = "pag";
+      var c = document.createElement("canvas");
+      c.width = vp.width; c.height = vp.height;
+      div.appendChild(c);
+      div.insertAdjacentHTML("beforeend",
+        '<div class="marca"><span>SOMENTE CONSULTA - ' + POCO + '</span></div>');
+      area.appendChild(div);
+      await pagina.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+  }).catch(function () {
+    msg.textContent = "Não foi possível abrir o documento.";
+  });
+}
+
+document.addEventListener("keydown", function (e) {
+  var k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && ["s", "p", "c", "u"].includes(k)) e.preventDefault();
+});
+document.addEventListener("dragstart", function (e) { e.preventDefault(); });
+</script>
+</body>
+</html>
